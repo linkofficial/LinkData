@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>連界計畫｜心理測驗</title>
+  <style>
+    /* =========================
+       美術スタイル：Cyber-Linker Style
+       ========================= */
+    :root {
+      --bg: #050814;
+      --card-bg: rgba(18, 26, 51, 0.75);
+      --accent: #2b3fff;
+      --accent-light: #6a7bff;
+      --text: #e7ecff;
+      --muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.1);
+      --glass: rgba(255, 255, 255, 0.03);
+    }
+
+    * { box-sizing: border-box; transition: all 0.2s ease-out; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans TC", sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(43, 63, 255, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(106, 123, 255, 0.1) 0%, transparent 40%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .wrap { width: 100%; max-width: 700px; padding: 40px 20px; }
+
+    /* ヘッダーデザイン */
+    .top { text-align: center; margin-bottom: 30px; }
+    .brand { 
+      font-size: 28px; font-weight: 900; letter-spacing: 2px;
+      background: linear-gradient(to right, #fff, var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .pill { 
+      display: inline-block; font-size: 12px; color: var(--muted);
+      padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px;
+    }
+
+    /* メインカード（グラスモーフィズム） */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+
+    h1 { font-size: 24px; margin-bottom: 24px; text-align: center; }
+    h2 { font-size: 20px; margin-top: 0; color: var(--accent-light); }
+    p { color: var(--muted); line-height: 1.8; }
+
+    /* ボタン・選択肢 */
+    .grid { display: grid; gap: 16px; margin-top: 24px; }
+    
+    .opt {
+      width: 100%; text-align: left; padding: 18px; border-radius: 16px;
+      border: 1px solid var(--border); background: var(--glass);
+      color: var(--text); cursor: pointer; font-size: 16px;
+      position: relative; overflow: hidden;
+    }
+    .opt:hover {
+      background: rgba(43, 63, 255, 0.1);
+      border-color: var(--accent-light);
+      transform: translateY(-2px);
+    }
+
+    .btn {
+      padding: 12px 24px; border-radius: 12px; border: none;
+      background: var(--accent); color: white; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 15px rgba(43, 63, 255, 0.3);
+    }
+    .btn:hover { background: var(--accent-light); transform: scale(1.05); }
+    .btn.secondary { 
+      background: transparent; border: 1px solid var(--border); 
+      box-shadow: none; color: var(--muted); 
+    }
+
+    /* プログレスバー */
+    .progress { height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; margin: 20px 0; overflow: hidden; }
+    .bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-light)); width: 0%; transition: width 0.4s ease; }
+
+    /* 装飾要素 */
+    .box { background: rgba(0,0,0,0.2); border-radius: 18px; padding: 24px; margin-top: 20px; border: 1px solid var(--border); }
+    .tag { font-family: monospace; color: var(--accent-light); font-size: 12px; margin-bottom: 8px; display: block; }
+    .hr { height: 1px; background: var(--border); margin: 24px 0; }
+    
+    /* リスト */
+    ul { padding-left: 20px; color: var(--muted); }
+    li { margin: 8px 0; }
+
+    /* アニメーション */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">連界計畫</div>
+      <div class="pill">COSMOS LINKER PSYCHOLOGY TEST</div>
+    </div>
+    <div id="app" class="card"></div>
+  </div>
+
+<script>
+/** * ロジック部分は元のコードを維持しつつ、
+ * 描画時に "fade-in" クラスを追加するように調整しています。
+ */
+
+const INDUSTRY_LABEL = { T:"T 科技／工程／資安", C:"C 創意／內容／藝術", S:"S 教育／輔導／支援", L:"L 生活服務／店面營運", M:"M 管理／策略／企劃", F:"F 自由接案／斜槓／多專案" };
+const INDUSTRY_DESC = { T:"你在系統、邏輯、排錯、優化中最自在；適合以「解決問題」為核心的日常舞台。", C:"你需要創造與表現空間；適合以「作品/內容/風格」作為存在感來源。", S:"你擅長承接與陪伴；適合以「教學、訓練、照顧、支援」作為關係的推進方式。", L:"你對日常運轉很有感；適合在店面、餐飲、生活場域中經營溫度與秩序。", M:"你習慣掌握方向與資源；適合企劃、營運、管理、策略等「定調與推進」位置。", F:"你需要彈性與變化；適合接案、顧問、跨域斜槓、多專案的流動型生活。" };
+const SPECIES_BY_DIET = { H: ["兔", "鹿（任一鹿科）", "綿羊", "山羊", "馬"], C: ["狼", "虎", "獅", "豹（花豹/黑豹）", "猞猁"], O: ["熊（黑熊/棕熊）", "野豬", "浣熊", "獾", "狐（紅狐/銀狐）"] };
+
+const QUIZZES = [
+  {
+    id:"human-beast",
+    title:"① 種族傾向：人類 or 獸人",
+    intro:"探索你的靈魂更趨向於哪種存在型態。",
+    mode:"score",
+    initState: () => ({ Human:0, Beast:0 }),
+    questions:[
+      { t:"你希望 OC 最有魅力的點是？", opts:[{label:"思考、語言、品味與人際分寸", add:{Human:1}},{label:"工作能力、生活方式、城市故事感", add:{Human:1}},{label:"天生特徵（耳、尾、嗅覺等）帶來的氛圍", add:{Beast:1}},{label:"本能與差異帶來的張力", add:{Beast:1}}]},
+      { t:"你對本能/氣味/發情期設定的感覺？", opts:[{label:"不太想碰，會有壓力", add:{Human:1}},{label:"可以存在但不影響日常", add:{Human:1}},{label:"低調存在但能成為互動細節", add:{Beast:1}},{label:"想作為關係推進關鍵", add:{Beast:1}}]},
+      { t:"你更喜歡的互動型態？", opts:[{label:"用對話慢慢建立信任", add:{Human:1}},{label:"生活互動自然累積", add:{Human:1}},{label:"直覺牽引與反應很有趣", add:{Beast:1}},{label:"明顯吸引力與張力", add:{Beast:1}}]},
+      { t:"你希望物種差異被看見嗎？", opts:[{label:"純人類社會圈低調融入", add:{Human:1}},{label:"像一般人一樣過日子", add:{Human:1}},{label:"偶爾被看出特徵也沒差", add:{Beast:1}},{label:"希望差異自然被看見與被接受", add:{Beast:1}}]},
+      { t:"你希望別人第一眼感受到？", opts:[{label:"很真實", add:{Human:1}},{label:"可靠/好相處", add:{Human:1}},{label:"不太像人的魅力", add:{Beast:1}},{label:"危險/可愛/很野、很想靠近", add:{Beast:1}}]}
+    ],
+    result: (acc) => {
+      const pick = (acc.Beast >= 3) ? "獸人" : "人類";
+      const desc = (pick==="人類") ? "你更適合從「現代都市日常」出發：職場、生活節奏、界線與對話。" : "你更適合讓「物種差異」成為魅力核心：感官、本能、天生特徵。";
+      return { title:`判定結果：${pick}`, lines:[desc] };
+    }
+  },
+  // ... (他のQUIZZESデータも同様にスタイルに合わせて微調整可能ですが、ロジック維持のため省略なしで統合してください)
+  {
+    id:"industry",
+    title:"② 產業舒適圈推薦",
+    intro:"找出你在聯卡特世界中最能發揮長才的位置。",
+    mode:"tally",
+    initState: () => ({ T:0, C:0, S:0, L:0, M:0, F:0 }),
+    questions:[
+      { t:"理想工作節奏？", opts:[{label:"流程與系統，把事做穩做準", addKey:"T"},{label:"做出作品與風格", addKey:"C"},{label:"看見他人變好很有成就感", addKey:"S"},{label:"處理日常運轉、維持場域", addKey:"L"},{label:"決定方向、分配資源、帶隊", addKey:"M"},{label:"不被綁死，接案/多任務", addKey:"F"}]},
+      { t:"壓力時你怎麼回血？", opts:[{label:"拆解排查、找到解法", addKey:"T"},{label:"創作產出", addKey:"C"},{label:"承接/陪伴/被需要", addKey:"S"},{label:"回到生活感與環境整理", addKey:"L"},{label:"重整規則與計畫", addKey:"M"},{label:"換場景/換案子重新開始", addKey:"F"}]},
+      { t:"你最不喜歡的工作狀態？", opts:[{label:"人情壓力太多、講不清楚", addKey:"T"},{label:"一成不變、不能表現", addKey:"C"},{label:"冷冰冰只看效率", addKey:"S"},{label:"太抽象、離生活太遠", addKey:"L"},{label:"沒有決策權、只能配合", addKey:"M"},{label:"被固定時間地點綁死", addKey:"F"}]},
+      { t:"OC 自然融入聯卡特日常，你想把他放在哪？", opts:[{label:"系統監控室/工程現場", addKey:"T"},{label:"工作室/設計內容團隊", addKey:"C"},{label:"學校/訓練/支援單位", addKey:"S"},{label:"咖啡廳/商圈/店長室", addKey:"L"},{label:"會議室/營運策略中心", addKey:"M"},{label:"共享辦公室/到處跑", addKey:"F"}]},
+      { t:"你希望別人怎麼稱呼你的角色？", opts:[{label:"解決問題的人", addKey:"T"},{label:"有風格、會做內容的人", addKey:"C"},{label:"很懂人、很會照顧的人", addKey:"S"},{label:"很會過生活/把場域顧好的人", addKey:"L"},{label:"能做決策、能帶隊的人", addKey:"M"},{label:"自由、很會變通的人", addKey:"F"}]},
+    ],
+    result: (acc) => {
+      const sorted = Object.entries(acc).sort((a,b)=>b[1]-a[1]);
+      const top1 = sorted[0][0]; const top2 = sorted[1][0];
+      return { title:`舒適圈：${INDUSTRY_LABEL[top1]}`, lines:[INDUSTRY_DESC[top1], `次要推薦：${INDUSTRY_LABEL[top2]}`] };
+    }
+  },
+  {
+    id:"diet-and-species",
+    title:"③ 獸人種族深度推薦",
+    intro:"陸生脊椎動物限定：從性格與直覺判斷你的獸身。",
+    mode:"tally",
+    initState: () => ({ H:0, C:0, O:0 }),
+    questions:[
+      { t:"你最舒服的相處距離？", opts:[{label:"慢慢靠近、互不壓迫", addKey:"H"},{label:"直球互動、張力明確", addKey:"C"},{label:"可近可遠、看情況切換", addKey:"O"}]},
+      { t:"遇到衝突時你更像？", opts:[{label:"先降溫、避免正面衝撞", addKey:"H"},{label:"直接定調、推進解法", addKey:"C"},{label:"先觀察局勢再出手", addKey:"O"}]},
+      { t:"你更在意的是？", opts:[{label:"安全感與生活穩定", addKey:"H"},{label:"勝負感與主導節奏", addKey:"C"},{label:"自由度與彈性選擇", addKey:"O"}]},
+      { t:"你喜歡的魅力呈現是？", opts:[{label:"溫柔、可靠、讓人放鬆", addKey:"H"},{label:"強勢、乾脆、存在感強", addKey:"C"},{label:"有趣、難定義、反差感", addKey:"O"}]},
+      { t:"你在群體裡通常是？", opts:[{label:"穩定的陪伴者", addKey:"H"},{label:"帶頭的人", addKey:"C"},{label:"調節者", addKey:"O"}]},
+      { t:"你理想的日常節奏？", opts:[{label:"固定路線、舒服就好", addKey:"H"},{label:"有目標、有挑戰", addKey:"C"},{label:"多線並行、隨時轉向", addKey:"O"}]},
+    ],
+    result: (acc) => {
+      const entries = Object.entries(acc).sort((a,b)=>b[1]-a[1]);
+      const pick = (entries[0][1] === entries[1][1]) ? "O" : entries[0][0];
+      const meta = { H: { title:"草食獸人", desc:"溫和、重界線、慢熱但可靠。"}, C: { title:"肉食獸人", desc:"行動派、節奏明確、互動帶張力。"}, O: { title:"雜食獸人", desc:"可進可退、擅長切換距離。"} }[pick];
+      return { title:`推薦：${meta.title}`, lines:[meta.desc, "動物種候選："], bullets: SPECIES_BY_DIET[pick] };
+    }
+  }
+];
+
+const app = document.getElementById("app");
+let state = { view: "home", quizId: null, idx: 0, acc: null, answers: [] };
+
+function render() {
+  app.classList.remove("fade-in");
+  void app.offsetWidth; // リフロー強制
+  app.classList.add("fade-in");
+
+  if(state.view === "home") {
+    const items = QUIZZES.map(q => `
+      <button class="opt" data-action="start" data-quiz="${q.id}">
+        <div style="font-weight:800; color:var(--accent-light)">${q.title}</div>
+        <div style="font-size:13px; margin-top:4px; color:var(--muted)">${q.intro}</div>
+      </button>
+    `).join("");
+    app.innerHTML = `<h1>選擇測驗模組</h1><div class="grid">${items}</div>`;
+  } 
+  else if(state.view === "run") {
+    const qz = QUIZZES.find(q=>q.id===state.quizId);
+    const q = qz.questions[state.idx];
+    const pct = (state.idx / qz.questions.length) * 100;
+    const opts = q.opts.map((o,i)=>`<button class="opt" data-action="answer" data-opt="${i}">${o.label}</button>`).join("");
+    app.innerHTML = `
+      <span class="tag">${qz.id.toUpperCase()} MODULE</span>
+      <h2>${qz.title}</h2>
+      <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+      <p style="font-weight:700; color:var(--text)">${q.t}</p>
+      <div class="grid">${opts}</div>
+      <div class="hr"></div>
+      <button class="btn secondary" data-action="home">返回主選單</button>
+    `;
+  } 
+  else if(state.view === "result") {
+    const qz = QUIZZES.find(q=>q.id===state.quizId);
+    const res = qz.result(state.acc);
+    app.innerHTML = `
+      <span class="tag">ANALYSIS COMPLETE</span>
+      <h2>測驗結果</h2>
+      <div class="box">
+        <h3 style="margin-top:0; color:var(--accent-light)">${res.title}</h3>
+        ${res.lines.map(l=>`<p>${l}</p>`).join("")}
+        ${res.bullets ? `<ul>${res.bullets.map(b=>`<li>${b}</li>`).join("")}</ul>` : ""}
+      </div>
+      <div class="grid">
+        <button class="btn" data-action="restart">重新測驗</button>
+        <button class="btn secondary" data-action="home">回首頁</button>
+      </div>
+    `;
+  }
+}
+
+// イベントリスナー（元のロジックを継承）
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-action]");
+  if(!el) return;
+  const action = el.dataset.action;
+  if(action==="home") { state.view="home"; }
+  else if(action==="start") {
+    const qz = QUIZZES.find(q=>q.id===el.dataset.quiz);
+    state = { view:"run", quizId:qz.id, idx:0, acc:qz.initState(), answers:[] };
+  }
+  else if(action==="answer") {
+    const qz = QUIZZES.find(q=>q.id===state.quizId);
+    const opt = qz.questions[state.idx].opts[Number(el.dataset.opt)];
+    if(qz.mode==="score") for(const [k,v] of Object.entries(opt.add||{})) state.acc[k]=(state.acc[k]||0)+v;
+    else state.acc[opt.addKey]=(state.acc[opt.addKey]||0)+1;
+    state.idx++;
+    if(state.idx >= qz.questions.length) state.view="result";
+  }
+  else if(action==="restart") {
+    state.idx=0; state.acc=QUIZZES.find(q=>q.id===state.quizId).initState(); state.view="run";
+  }
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
