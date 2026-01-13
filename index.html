@@ -19,6 +19,7 @@
         input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #e1e8e9; border-radius: 8px; box-sizing: border-box; background-color: #fcfdfe; }
         .btn-group { grid-column: span 2; display: flex; gap: 10px; margin-top: 10px; }
         button.save-btn { flex: 2; background: var(--primary-color); color: white; border: none; padding: 15px; font-size: 1.1em; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
+        button.save-btn:hover { background: var(--secondary-color); }
         button.cancel-btn { flex: 1; background: #ccc; color: white; border: none; padding: 15px; font-size: 1.1em; border-radius: 8px; cursor: pointer; display: none; }
         .character-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .character-card { background: white; padding: 25px; border-radius: 12px; border-bottom: 4px solid var(--accent-color); position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -27,14 +28,15 @@
         .card-label { color: var(--primary-color); font-weight: bold; margin-right: 5px; }
         .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; }
         .edit-btn, .delete-btn { background: #eee; color: #666; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8em; }
+        .edit-btn:hover, .delete-btn:hover { background: #ddd; }
         .search-section { background: #eef4f5; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        @media (max-width: 600px) { .grid-form, .character-list, .search-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 600px) { .grid-form, .character-list, .search-grid { grid-template-columns: 1fr !important; } .full-width { grid-column: span 1; } .btn-group { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="form-section">
-        <h1 id="formTitle">▸ 雲端人物設定建檔</h1>
+        <h1 id="formTitle">▸ 人物設定建檔</h1>
         <div class="grid-form">
             <input type="hidden" id="editId">
             <div class="form-group"><label>姓名：</label><input type="text" id="name"></div>
@@ -102,15 +104,17 @@
 
     let allCharacters = [];
 
+    // 即時監聽數據庫
     onSnapshot(query(colRef, orderBy("updatedAt", "desc")), (snapshot) => {
         allCharacters = snapshot.docs.map(docSnap => ({
             id: docSnap.id,
             ...docSnap.data()
         }));
         updateRaceOptions();
-        filterAndRender();
+        window.filterAndRender();
     });
 
+    // 更新種族篩選清單
     function updateRaceOptions() {
         const raceFilter = document.getElementById('raceFilter');
         const currentValue = raceFilter.value;
@@ -124,6 +128,7 @@
         raceFilter.value = currentValue;
     }
 
+    // 渲染與過濾邏輯
     window.filterAndRender = function() {
         const keyword = document.getElementById('keywordSearch').value.toLowerCase();
         const locFilter = document.getElementById('locationFilter').value;
@@ -147,21 +152,22 @@
                     <button class="edit-btn" onclick="enterEditMode('${char.id}', '${dataStr}')">修改</button>
                     <button class="delete-btn" onclick="deleteCharacter('${char.id}')">×</button>
                 </div>
-                <h3>${char.name}</h3>
+                <h3>${char.name || '未命名'}</h3>
                 <div class="card-grid">
-                    <div><span class="card-label">年齡:</span>${char.age}</div>
-                    <div><span class="card-label">種族:</span>${char.race}</div>
-                    <div><span class="card-label">職業:</span>${char.job}</div>
-                    <div><span class="card-label">現居:</span>${char.location}</div>
+                    <div><span class="card-label">年齡:</span>${char.age || '-'}</div>
+                    <div><span class="card-label">種族:</span>${char.race || '-'}</div>
+                    <div><span class="card-label">職業:</span>${char.job || '-'}</div>
+                    <div><span class="card-label">現居:</span>${char.location || '-'}</div>
                 </div>
-                <div class="card-full"><span class="card-label">外貌:</span><br>${char.appearance}</div>
-                <div class="card-full"><span class="card-label">簡介:</span><br>${char.bio}</div>
+                <div class="card-full"><span class="card-label">外貌:</span><br>${char.appearance || '-'}</div>
+                <div class="card-full"><span class="card-label">簡介:</span><br>${char.bio || '-'}</div>
             `;
             listDiv.appendChild(card);
         });
-        if (filtered.length === 0) listDiv.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #999; padding: 40px;">找不到相符的人。/p>';
+        if (filtered.length === 0) listDiv.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #999; padding: 40px;">找不到相符的人。</p>';
     };
 
+    // 儲存或更新數據
     window.handleSave = async function() {
         const editId = document.getElementById('editId').value;
         const charData = {
@@ -178,12 +184,26 @@
             notes: document.getElementById('notes').value,
             updatedAt: Date.now()
         };
+        
         if (!charData.name) return alert("請輸入姓名！");
-        if (editId) await updateDoc(doc(db, "characters", editId), charData);
-        else { charData.createdAt = Date.now(); await addDoc(colRef, charData); }
-        exitEditMode();
+        
+        try {
+            if (editId) {
+                await updateDoc(doc(db, "characters", editId), charData);
+                alert("修改成功！");
+            } else {
+                charData.createdAt = Date.now();
+                await addDoc(colRef, charData);
+                alert("建立成功！");
+            }
+            window.exitEditMode();
+        } catch (error) {
+            console.error("Error saving document: ", error);
+            alert("操作失敗，請檢查權限或網路。");
+        }
     };
 
+    // 進入編輯模式
     window.enterEditMode = function(id, dataStr) {
         if (prompt("請輸入修改密碼：") !== "110") return alert("密碼錯誤！");
         const data = JSON.parse(decodeURIComponent(dataStr));
@@ -199,22 +219,37 @@
         document.getElementById('appearance').value = data.appearance || '';
         document.getElementById('bio').value = data.bio || '';
         document.getElementById('notes').value = data.notes || '';
-        document.getElementById('formTitle').innerText = "編輯模式 (110)";
+        
+        document.getElementById('formTitle').innerText = "編輯模式 (ID: " + id.substring(0,5) + ")";
         document.getElementById('mainBtn').innerText = "儲存修改";
         document.getElementById('cancelBtn').style.display = "block";
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // 結束編輯模式 / 重置表單
     window.exitEditMode = function() {
         document.getElementById('editId').value = "";
-        document.querySelectorAll('input, textarea').forEach(el => el.value = '');
-        document.getElementById('formTitle').innerText = "雲端人物設定建檔";
+        // 清空所有 input 和 textarea
+        document.querySelectorAll('.grid-form input:not([type="hidden"]), .grid-form textarea').forEach(el => el.value = '');
+        // 重置 select
+        document.getElementById('location').value = '星域';
+        
+        document.getElementById('formTitle').innerText = "▸ 雲端人物設定建檔";
         document.getElementById('mainBtn').innerText = "建立雲端檔案";
         document.getElementById('cancelBtn').style.display = "none";
     };
 
+    // 刪除數據
     window.deleteCharacter = async function(id) {
-        if(confirm("確定刪除嗎？") && prompt("密碼：") === "Link") await deleteDoc(doc(db, "characters", id));
+        if(confirm("確定刪除嗎？")) {
+            const password = prompt("請輸入刪除密碼：");
+            if (password === "Link") {
+                await deleteDoc(doc(db, "characters", id));
+                alert("已刪除檔案。");
+            } else {
+                alert("密碼錯誤！");
+            }
+        }
     };
 </script>
 </body>
