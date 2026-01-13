@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聯卡特 - 雲端人物資料庫</title>
+    <style>
+        :root {
+            --primary-color: #4696a4; --secondary-color: #2c5d63; --bg-color: #f4f8f9;
+            --card-bg: #ffffff; --text-color: #334e52; --accent-color: #78c2cc;
+        }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg-color); padding: 20px; color: var(--text-color); line-height: 1.6; }
+        .container { max-width: 900px; margin: auto; }
+        .form-section { background: var(--card-bg); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(70,150,164,0.1); margin-bottom: 40px; border-top: 6px solid var(--primary-color); }
+        h1 { text-align: left; color: var(--secondary-color); border-left: 5px solid var(--accent-color); padding-left: 15px; margin-bottom: 25px; font-size: 1.8em; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .full-width { grid-column: span 2; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--primary-color); }
+        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #e1e8e9; border-radius: 8px; box-sizing: border-box; background-color: #fcfdfe; }
+        .btn-group { grid-column: span 2; display: flex; gap: 10px; margin-top: 10px; }
+        button.save-btn { flex: 2; background: var(--primary-color); color: white; border: none; padding: 15px; font-size: 1.1em; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: bold; }
+        button.cancel-btn { flex: 1; background: #ccc; color: white; border: none; padding: 15px; font-size: 1.1em; border-radius: 8px; cursor: pointer; display: none; }
+        .character-list { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .character-card { background: white; padding: 25px; border-radius: 12px; border-bottom: 4px solid var(--accent-color); position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card-full { border-top: 1px dashed #eee; padding-top: 10px; margin-top: 10px; white-space: pre-wrap; word-wrap: break-word; }
+        .card-grid { display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.9em; }
+        .card-label { color: var(--primary-color); font-weight: bold; margin-right: 5px; }
+        .action-btns { position: absolute; top: 15px; right: 15px; display: flex; gap: 8px; }
+        .edit-btn, .delete-btn { background: #eee; color: #666; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8em; }
+        .search-section { background: #eef4f5; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        @media (max-width: 600px) { .grid-form, .character-list, .search-grid { grid-template-columns: 1fr !important; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="form-section">
+        <h1 id="formTitle">▸ 雲端人物設定建檔</h1>
+        <div class="grid-form">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>姓名：</label><input type="text" id="name"></div>
+            <div class="form-group"><label>年齡：</label><input type="text" id="age"></div>
+            <div class="form-group"><label>種族：</label><input type="text" id="race"></div>
+            <div class="form-group"><label>站位：</label><input type="text" id="position"></div>
+            <div class="form-group"><label>職業：</label><input type="text" id="job"></div>
+            <div class="form-group"><label>現居地：</label><select id="location"><option value="星域">星域</option><option value="月域">月域</option></select></div>
+            <div class="form-group"><label>喜好：</label><input type="text" id="likes"></div>
+            <div class="form-group"><label>厭惡：</label><input type="text" id="dislikes"></div>
+            <div class="form-group full-width"><label>外貌描述：</label><textarea id="appearance" rows="2"></textarea></div>
+            <div class="form-group full-width"><label>簡介：</label><textarea id="bio" rows="3"></textarea></div>
+            <div class="form-group full-width"><label>備註：</label><textarea id="notes" rows="2"></textarea></div>
+            <div class="btn-group">
+                <button id="mainBtn" class="save-btn" onclick="handleSave()">建立雲端檔案</button>
+                <button id="cancelBtn" class="cancel-btn" onclick="exitEditMode()">取消編輯</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-section">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px;" class="search-grid">
+            <div class="form-group">
+                <label style="font-size: 0.9em; color: var(--secondary-color); font-weight: bold; display: block; margin-bottom: 5px;">🔍 關鍵字搜尋：</label>
+                <input type="text" id="keywordSearch" placeholder="搜尋姓名、職業、簡介..." oninput="filterAndRender()">
+            </div>
+            <div class="form-group">
+                <label style="font-size: 0.9em; color: var(--secondary-color); font-weight: bold; display: block; margin-bottom: 5px;">📍 居住地篩選：</label>
+                <select id="locationFilter" onchange="filterAndRender()">
+                    <option value="全部">全部地點</option>
+                    <option value="星域">星域</option>
+                    <option value="月域">月域</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="font-size: 0.9em; color: var(--secondary-color); font-weight: bold; display: block; margin-bottom: 5px;">👤 種族篩選：</label>
+                <select id="raceFilter" onchange="filterAndRender()">
+                    <option value="全部">所有種族</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+    <h2>▸ 已建檔人物清單 (即時同步)</h2>
+    <div id="characterList" class="character-list"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAMRW_PZWHQq31cS5IHajxtYt82469F0IA",
+        authDomain: "lianjiejihua.firebaseapp.com",
+        projectId: "lianjiejihua",
+        storageBucket: "lianjiejihua.firebasestorage.app",
+        messagingSenderId: "1047293962256",
+        appId: "1:1047293962256:web:e8204bec4cfe93e64e8295"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const colRef = collection(db, "characters");
+
+    let allCharacters = [];
+
+    onSnapshot(query(colRef, orderBy("updatedAt", "desc")), (snapshot) => {
+        allCharacters = snapshot.docs.map(docSnap => ({
+            id: docSnap.id,
+            ...docSnap.data()
+        }));
+        updateRaceOptions();
+        filterAndRender();
+    });
+
+    function updateRaceOptions() {
+        const raceFilter = document.getElementById('raceFilter');
+        const currentValue = raceFilter.value;
+        const races = [...new Set(allCharacters.map(c => c.race).filter(r => r))];
+        raceFilter.innerHTML = '<option value="全部">所有種族</option>';
+        races.forEach(race => {
+            const opt = document.createElement('option');
+            opt.value = race; opt.innerText = race;
+            raceFilter.appendChild(opt);
+        });
+        raceFilter.value = currentValue;
+    }
+
+    window.filterAndRender = function() {
+        const keyword = document.getElementById('keywordSearch').value.toLowerCase();
+        const locFilter = document.getElementById('locationFilter').value;
+        const raceFilter = document.getElementById('raceFilter').value;
+        const listDiv = document.getElementById('characterList');
+        listDiv.innerHTML = '';
+        
+        const filtered = allCharacters.filter(char => {
+            const matchLoc = (locFilter === "全部" || char.location === locFilter);
+            const matchRace = (raceFilter === "全部" || char.race === raceFilter);
+            const content = `${char.name} ${char.job} ${char.bio} ${char.appearance} ${char.race}`.toLowerCase();
+            return matchLoc && matchRace && content.includes(keyword);
+        });
+
+        filtered.forEach(char => {
+            const dataStr = encodeURIComponent(JSON.stringify(char));
+            const card = document.createElement('div');
+            card.className = 'character-card';
+            card.innerHTML = `
+                <div class="action-btns">
+                    <button class="edit-btn" onclick="enterEditMode('${char.id}', '${dataStr}')">修改</button>
+                    <button class="delete-btn" onclick="deleteCharacter('${char.id}')">×</button>
+                </div>
+                <h3>${char.name}</h3>
+                <div class="card-grid">
+                    <div><span class="card-label">年齡:</span>${char.age}</div>
+                    <div><span class="card-label">種族:</span>${char.race}</div>
+                    <div><span class="card-label">職業:</span>${char.job}</div>
+                    <div><span class="card-label">現居:</span>${char.location}</div>
+                </div>
+                <div class="card-full"><span class="card-label">外貌:</span><br>${char.appearance}</div>
+                <div class="card-full"><span class="card-label">簡介:</span><br>${char.bio}</div>
+            `;
+            listDiv.appendChild(card);
+        });
+        if (filtered.length === 0) listDiv.innerHTML = '<p style="grid-column: span 2; text-align: center; color: #999; padding: 40px;">找不到相符的人。/p>';
+    };
+
+    window.handleSave = async function() {
+        const editId = document.getElementById('editId').value;
+        const charData = {
+            name: document.getElementById('name').value,
+            age: document.getElementById('age').value,
+            race: document.getElementById('race').value,
+            position: document.getElementById('position').value,
+            job: document.getElementById('job').value,
+            location: document.getElementById('location').value,
+            likes: document.getElementById('likes').value,
+            dislikes: document.getElementById('dislikes').value,
+            appearance: document.getElementById('appearance').value,
+            bio: document.getElementById('bio').value,
+            notes: document.getElementById('notes').value,
+            updatedAt: Date.now()
+        };
+        if (!charData.name) return alert("請輸入姓名！");
+        if (editId) await updateDoc(doc(db, "characters", editId), charData);
+        else { charData.createdAt = Date.now(); await addDoc(colRef, charData); }
+        exitEditMode();
+    };
+
+    window.enterEditMode = function(id, dataStr) {
+        if (prompt("請輸入修改密碼：") !== "110") return alert("密碼錯誤！");
+        const data = JSON.parse(decodeURIComponent(dataStr));
+        document.getElementById('editId').value = id;
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('age').value = data.age || '';
+        document.getElementById('race').value = data.race || '';
+        document.getElementById('position').value = data.position || '';
+        document.getElementById('job').value = data.job || '';
+        document.getElementById('location').value = data.location || '星域';
+        document.getElementById('likes').value = data.likes || '';
+        document.getElementById('dislikes').value = data.dislikes || '';
+        document.getElementById('appearance').value = data.appearance || '';
+        document.getElementById('bio').value = data.bio || '';
+        document.getElementById('notes').value = data.notes || '';
+        document.getElementById('formTitle').innerText = "編輯模式 (110)";
+        document.getElementById('mainBtn').innerText = "儲存修改";
+        document.getElementById('cancelBtn').style.display = "block";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.exitEditMode = function() {
+        document.getElementById('editId').value = "";
+        document.querySelectorAll('input, textarea').forEach(el => el.value = '');
+        document.getElementById('formTitle').innerText = "雲端人物設定建檔";
+        document.getElementById('mainBtn').innerText = "建立雲端檔案";
+        document.getElementById('cancelBtn').style.display = "none";
+    };
+
+    window.deleteCharacter = async function(id) {
+        if(confirm("確定刪除嗎？") && prompt("密碼：") === "Link") await deleteDoc(doc(db, "characters", id));
+    };
+</script>
+</body>
+</html>
